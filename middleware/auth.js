@@ -11,14 +11,21 @@ function requireAuth(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // token_invalidated_at dan oldin chiqarilgan tokenlarni rad etish
     const db = getDb();
+
+    // token_invalidated_at dan oldin chiqarilgan tokenlarni rad etish
     const row = db.prepare("SELECT value FROM settings WHERE key='token_invalidated_at'").get();
     if (row?.value) {
       const invalidatedAt = Number(row.value);
       if (decoded.iat < invalidatedAt) {
         return res.status(401).json({ error: 'Sessiya muddati tugadi. Qayta login qiling.' });
       }
+    }
+
+    // User bloklangan yoki o'chirilganligini tekshirish
+    const user = db.prepare("SELECT is_active FROM users WHERE id = ?").get(decoded.id);
+    if (!user || user.is_active !== 1) {
+      return res.status(403).json({ error: 'Akkount bloklangan. Admin bilan bog\'laning.' });
     }
 
     req.user = decoded;
