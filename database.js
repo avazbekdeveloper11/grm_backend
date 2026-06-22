@@ -122,6 +122,7 @@ function initDb() {
     "ALTER TABLE orders ADD COLUMN washed_at TEXT",
     "ALTER TABLE orders ADD COLUMN washing_started_at TEXT",
     "ALTER TABLE orders ADD COLUMN assigned_worker_at TEXT",
+    "ALTER TABLE services ADD COLUMN salary_percent REAL NOT NULL DEFAULT 20",
     `CREATE TABLE IF NOT EXISTS salary_percent_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       percent REAL NOT NULL,

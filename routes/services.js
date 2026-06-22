@@ -17,7 +17,7 @@ router.get('/', requireAuth, (req, res) => {
 router.post('/', requireAdmin, (req, res) => {
   const db = getDb();
   const { name, unit_type, price_per_unit,
-          discount_enabled, discount_min_qty, discount_amount } = req.body;
+          discount_enabled, discount_min_qty, discount_amount, salary_percent } = req.body;
   if (!name || !unit_type || price_per_unit == null) {
     return res.status(400).json({ error: "name, unit_type, price_per_unit talab qilinadi" });
   }
@@ -27,13 +27,14 @@ router.post('/', requireAdmin, (req, res) => {
   const maxOrder = db.prepare('SELECT MAX(sort_order) as m FROM services').get().m || 0;
   const result = db.prepare(
     `INSERT INTO services (name, unit_type, price_per_unit, sort_order,
-       discount_enabled, discount_min_qty, discount_amount)
-     VALUES (?,?,?,?,?,?,?)`
+       discount_enabled, discount_min_qty, discount_amount, salary_percent)
+     VALUES (?,?,?,?,?,?,?,?)`
   ).run(
     name.trim(), unit_type, Number(price_per_unit), maxOrder + 1,
     discount_enabled ? 1 : 0,
     discount_min_qty != null ? Number(discount_min_qty) : 0,
     discount_amount != null ? Number(discount_amount) : 0,
+    salary_percent != null ? Number(salary_percent) : 20,
   );
   res.status(201).json(db.prepare('SELECT * FROM services WHERE id = ?').get(result.lastInsertRowid));
 });
@@ -45,11 +46,11 @@ router.put('/:id', requireAdmin, (req, res) => {
   const svc = db.prepare('SELECT * FROM services WHERE id = ?').get(id);
   if (!svc) return res.status(404).json({ error: 'Xizmat topilmadi' });
   const { name, unit_type, price_per_unit, is_active,
-          discount_enabled, discount_min_qty, discount_amount } = req.body;
+          discount_enabled, discount_min_qty, discount_amount, salary_percent } = req.body;
   db.prepare(`
     UPDATE services
     SET name=?, unit_type=?, price_per_unit=?, is_active=?,
-        discount_enabled=?, discount_min_qty=?, discount_amount=?
+        discount_enabled=?, discount_min_qty=?, discount_amount=?, salary_percent=?
     WHERE id=?
   `).run(
     name ?? svc.name,
@@ -59,6 +60,7 @@ router.put('/:id', requireAdmin, (req, res) => {
     discount_enabled != null ? (discount_enabled ? 1 : 0) : svc.discount_enabled,
     discount_min_qty != null ? Number(discount_min_qty) : svc.discount_min_qty,
     discount_amount != null ? Number(discount_amount) : svc.discount_amount,
+    salary_percent != null ? Number(salary_percent) : svc.salary_percent,
     id
   );
   res.json(db.prepare('SELECT * FROM services WHERE id = ?').get(id));
