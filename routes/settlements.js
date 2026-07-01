@@ -17,10 +17,12 @@ router.get('/balances', requireAuth, (req, res) => {
 
   const result = drivers.map(driver => {
     // To'liq to'langan buyurtmalardan yig'im (order_items mavjud bo'lsa ulardan)
+    // Agar buyurtma boshqa haydovchi avansini olgan bo'lsa, avansni ayiramiz
     const collected = db.prepare(`
       SELECT
         COALESCE(SUM(
           COALESCE(o.manual_price, COALESCE((SELECT SUM(oi.total_price) FROM order_items oi WHERE oi.order_id = o.id), o.total_price))
+          - CASE WHEN o.advance_payment > 0 AND o.assigned_driver_id IS NOT NULL AND o.assigned_driver_id != o.collected_by THEN o.advance_payment ELSE 0 END
         ), 0) as total,
         COUNT(*) as count
       FROM orders o
@@ -118,10 +120,13 @@ router.get('/driver/:id', requireAuth, (req, res) => {
 
   // Balans: to'langan + avanslar - topshirilgan
   const collectedTotal = db.prepare(`
-    SELECT COALESCE(SUM(COALESCE(o.manual_price, COALESCE(
-      (SELECT SUM(oi.total_price) FROM order_items oi WHERE oi.order_id = o.id),
-      o.total_price
-    ))), 0) as total
+    SELECT COALESCE(SUM(
+      COALESCE(o.manual_price, COALESCE(
+        (SELECT SUM(oi.total_price) FROM order_items oi WHERE oi.order_id = o.id),
+        o.total_price
+      ))
+      - CASE WHEN o.advance_payment > 0 AND o.assigned_driver_id IS NOT NULL AND o.assigned_driver_id != o.collected_by THEN o.advance_payment ELSE 0 END
+    ), 0) as total
     FROM orders o WHERE o.collected_by = ? AND o.payment_status = 'tolangan'
   `).get(driverId).total;
 
@@ -157,10 +162,13 @@ router.post('/', requireAdmin, (req, res) => {
 
   // Haydovchi balansini tekshirish
   const collected = db.prepare(`
-    SELECT COALESCE(SUM(COALESCE(o.manual_price, COALESCE(
-      (SELECT SUM(oi.total_price) FROM order_items oi WHERE oi.order_id = o.id),
-      o.total_price
-    ))), 0) as total
+    SELECT COALESCE(SUM(
+      COALESCE(o.manual_price, COALESCE(
+        (SELECT SUM(oi.total_price) FROM order_items oi WHERE oi.order_id = o.id),
+        o.total_price
+      ))
+      - CASE WHEN o.advance_payment > 0 AND o.assigned_driver_id IS NOT NULL AND o.assigned_driver_id != o.collected_by THEN o.advance_payment ELSE 0 END
+    ), 0) as total
     FROM orders o
     WHERE o.collected_by = ? AND o.payment_status = 'tolangan'
   `).get(Number(driver_id));
