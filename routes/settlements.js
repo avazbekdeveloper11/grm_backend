@@ -209,4 +209,18 @@ router.delete('/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// DELETE /api/settlements/driver/:id/reset — haydovchining barcha settlement'larini o'chirish
+router.delete('/driver/:id/reset', requireAdmin, (req, res) => {
+  const db = getDb();
+  const driverId = Number(req.params.id);
+
+  const deleted = db.prepare('DELETE FROM driver_settlements WHERE driver_id = ?').run(driverId);
+
+  res.json({
+    success: true,
+    message: `${deleted.changes} ta settlement o'chirildi`,
+    deleted_count: deleted.changes
+  });
+});
+
 module.exports = router;
