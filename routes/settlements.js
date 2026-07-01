@@ -27,11 +27,12 @@ router.get('/balances', requireAuth, (req, res) => {
       WHERE o.collected_by = ? AND o.payment_status = 'tolangan'
     `).get(driver.id);
 
-    // Hali to'lanmagan buyurtmalardan avans to'lovlar
+    // Avans to'lovlar - hali to'lanmagan YOKI to'langan lekin boshqa haydovchi yig'gan
     const advances = db.prepare(`
       SELECT COALESCE(SUM(o.advance_payment), 0) as total, COUNT(*) as count
       FROM orders o
-      WHERE o.assigned_driver_id = ? AND o.advance_payment > 0 AND o.payment_status != 'tolangan'
+      WHERE o.assigned_driver_id = ? AND o.advance_payment > 0
+        AND (o.payment_status != 'tolangan' OR (o.payment_status = 'tolangan' AND o.collected_by != o.assigned_driver_id))
     `).get(driver.id);
 
     // Jami topshirilgan (adminga)
@@ -98,7 +99,8 @@ router.get('/driver/:id', requireAuth, (req, res) => {
       o.advance_payment_at,
       o.advance_payment
     FROM orders o
-    WHERE o.assigned_driver_id = ? AND o.advance_payment > 0 AND o.payment_status != 'tolangan'
+    WHERE o.assigned_driver_id = ? AND o.advance_payment > 0
+      AND (o.payment_status != 'tolangan' OR (o.payment_status = 'tolangan' AND o.collected_by != o.assigned_driver_id))
       AND o.advance_payment_at IS NOT NULL
     ORDER BY o.advance_payment_at DESC
     LIMIT 50
@@ -126,7 +128,8 @@ router.get('/driver/:id', requireAuth, (req, res) => {
   const advanceTotal = db.prepare(`
     SELECT COALESCE(SUM(o.advance_payment), 0) as total
     FROM orders o
-    WHERE o.assigned_driver_id = ? AND o.advance_payment > 0 AND o.payment_status != 'tolangan'
+    WHERE o.assigned_driver_id = ? AND o.advance_payment > 0
+      AND (o.payment_status != 'tolangan' OR (o.payment_status = 'tolangan' AND o.collected_by != o.assigned_driver_id))
   `).get(driverId).total;
 
   const settledTotal = db.prepare(`
@@ -165,7 +168,8 @@ router.post('/', requireAdmin, (req, res) => {
   const advanceHeld = db.prepare(`
     SELECT COALESCE(SUM(o.advance_payment), 0) as total
     FROM orders o
-    WHERE o.assigned_driver_id = ? AND o.advance_payment > 0 AND o.payment_status != 'tolangan'
+    WHERE o.assigned_driver_id = ? AND o.advance_payment > 0
+      AND (o.payment_status != 'tolangan' OR (o.payment_status = 'tolangan' AND o.collected_by != o.assigned_driver_id))
   `).get(Number(driver_id));
 
   const settled = db.prepare(`
