@@ -31,6 +31,7 @@ router.get('/', requireAuth, (req, res) => {
   const { user } = req;
 
   const q = (req.query.q || '').trim();
+  const status = req.query.status || null; // 'yetkazildi', 'yangi', etc.
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 20));
   const offset = (page - 1) * limit;
@@ -57,6 +58,10 @@ router.get('/', requireAuth, (req, res) => {
     const conds = [];
     const params = [];
     if (extraCond) { conds.push(extraCond.cond); params.push(...extraCond.params); }
+    if (status) {
+      conds.push('o.status = ?');
+      params.push(status);
+    }
     if (like) {
       const orParts = [
         'o.customer_name LIKE ?', 'o.phone LIKE ?', 'o.address LIKE ?', 'CAST(o.id AS TEXT) = ?',
