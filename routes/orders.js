@@ -32,6 +32,7 @@ router.get('/', requireAuth, (req, res) => {
 
   const q = (req.query.q || '').trim();
   const status = req.query.status || null; // 'yetkazildi', 'yangi', etc.
+  const paymentStatus = req.query.payment_status || null; // 'tolangan', 'tolanmagan'
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 20));
   const offset = (page - 1) * limit;
@@ -61,6 +62,10 @@ router.get('/', requireAuth, (req, res) => {
     if (status) {
       conds.push('o.status = ?');
       params.push(status);
+    }
+    if (paymentStatus) {
+      conds.push('o.payment_status = ?');
+      params.push(paymentStatus);
     }
     if (like) {
       const orParts = [
