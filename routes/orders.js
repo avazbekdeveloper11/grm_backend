@@ -33,6 +33,11 @@ router.get('/', requireAuth, (req, res) => {
   const q = (req.query.q || '').trim();
   const status = req.query.status || null; // 'yetkazildi', 'yangi', etc.
   const paymentStatus = req.query.payment_status || null; // 'tolangan', 'tolanmagan'
+
+  // Debug log
+  if (status || paymentStatus) {
+    console.log('[Orders] Filter:', { status, paymentStatus, page: req.query.page });
+  }
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 20));
   const offset = (page - 1) * limit;
