@@ -32,7 +32,7 @@ router.get('/', requireAuth, (req, res) => {
 
   const q = (req.query.q || '').trim();
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 20));
+  const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 20));
   const offset = (page - 1) * limit;
 
   // search: har ikki alifboda ham qidirish (latin ↔ kirill)
